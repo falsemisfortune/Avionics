@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Test your ear for bird vocalizations. Real recordings from xeno-canto, species data from eBird.">
+<meta name="theme-color" content="#0e1a0f">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.svg">
+<title>Avionics — Bird Vocalization Quiz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e1a0f;
+    --bg2: #141f15;
+    --bg3: #1c2b1d;
+    --bg4: #223324;
+    --line: rgba(120,180,100,0.15);
+    --green: #7ab464;
+    --green-dim: #4a7a36;
+    --green-bright: #a8d48a;
+    --amber: #d4a64a;
+    --red: #c96060;
+    --text: #e8f0e4;
+    --text2: #9ab890;
+    --text3: #5a7a55;
+    --mono: 'DM Mono', monospace;
+    --serif: 'Instrument Serif', serif;
+    --sans: 'Outfit', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-weight: 300;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(ellipse 80% 60% at 20% 10%, rgba(60,100,40,0.18) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 80%, rgba(40,80,30,0.12) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .noise {
+    position: fixed;
+    inset: 0;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 0 1.5rem 4rem;
+  }
+
+  header {
+    padding: 2.5rem 0 2rem;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .wordmark {
+    font-family: var(--serif);
+    font-size: 2.4rem;
+    color: var(--green-bright);
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+
+  .wordmark em {
+    font-style: italic;
+    color: var(--text2);
+    font-size: 0.9em;
+  }
+
+  .tagline {
+    font-size: 0.75rem;
+    color: var(--text3);
+    font-family: var(--mono);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 1.5rem;
+  }
+
+  .stat {
+    background: var(--bg2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 0.75rem;
+    text-align: center;
+  }
+
+  .stat-val {
+    font-family: var(--mono);
+    font-size: 1.4rem;
+    font-weight: 500;
+    color: var(--green-bright);
+    line-height: 1;
+  }
+
+  .stat-lbl {
+    font-size: 0.65rem;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-top: 4px;
+    font-family: var(--mono);
+  }
+
+  .key-bar {
+    background: var(--bg2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+  }
+
+  .key-bar label {
+    font-size: 0.7rem;
+    color: var(--text3);
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+  }
+
+  .key-bar input {
+    flex: 1;
+    min-width: 160px;
+    background: var(--bg3);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    color: var(--green);
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    padding: 6px 10px;
+    outline: none;
+  }
+
+  .key-bar input:focus { border-color: var(--green-dim); }
+
+  .key-bar input::placeholder { color: var(--text3); }
+
+  .btn-sm {
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    color: var(--text2);
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+    white-space: nowrap;
+  }
+
+  .btn-sm:hover { border-color: var(--green-dim); color: var(--green); }
+
+  #key-status {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--text3);
+    white-space: nowrap;
+  }
+
+  #key-status.ok { color: var(--green); }
+  #key-status.err { color: var(--red); }
+
+  .controls {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    margin-bottom: 1.5rem;
+  }
+
+  .ctrl-group { display: flex; flex-direction: column; gap: 5px; }
+
+  .ctrl-lbl {
+    font-size: 0.65rem;
+    color: var(--text3);
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  select {
+    background: var(--bg2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 0.85rem;
+    font-weight: 300;
+    padding: 8px 12px;
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%235a7a55' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 30px;
+    transition: border-color 0.15s;
+  }
+
+  select:focus { border-color: var(--green-dim); }
+
+  .diff-tabs {
+    display: flex;
+    gap: 4px;
+  }
+
+  .dtab {
+    background: var(--bg2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--text3);
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    padding: 8px 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .dtab:hover { border-color: var(--green-dim); color: var(--text2); }
+
+  .dtab.active {
+    background: var(--bg4);
+    border-color: var(--green-dim);
+    color: var(--green-bright);
+  }
+
+  .new-btn {
+    background: var(--green-dim);
+    border: 1px solid var(--green);
+    border-radius: 8px;
+    color: var(--green-bright);
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    padding: 9px 20px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+    letter-spacing: 0.04em;
+    margin-left: auto;
+  }
+
+  .new-btn:hover {
+    background: var(--bg4);
+    border-color: var(--green-bright);
+  }
+
+  .new-btn:active { transform: scale(0.97); }
+
+  .quiz-card {
+    background: var(--bg2);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    animation: fadein 0.3s ease;
+  }
+
+  @keyframes fadein { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  .empty-state {
+    text-align: center;
+    padding: 3.5rem 2rem;
+    color: var(--text3);
+  }
+
+  .empty-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+  }
+
+  .empty-state p { font-size: 0.85rem; line-height: 1.7; }
+
+  .meta-chips {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+
+  .chip {
+    background: var(--bg3);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    padding: 3px 10px;
+    color: var(--text2);
+    letter-spacing: 0.04em;
+  }
+
+  .chip.green { background: rgba(74,122,54,0.2); border-color: var(--green-dim); color: var(--green); }
+
+  audio {
+    width: 100%;
+    margin: 0.75rem 0;
+    border-radius: 8px;
+    accent-color: var(--green);
+  }
+
+  audio::-webkit-media-controls-panel { background: var(--bg3); }
+
+  .timer-track {
+    height: 3px;
+    background: var(--bg4);
+    border-radius: 2px;
+    margin-bottom: 1rem;
+    overflow: hidden;
+  }
+
+  .timer-fill {
+    height: 3px;
+    background: var(--amber);
+    border-radius: 2px;
+    width: 100%;
+    transition: width 0.1s linear;
+  }
+
+  .options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 0.5rem;
+  }
+
+  .opt-btn {
+    background: var(--bg3);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    color: var(--text2);
+    font-family: var(--sans);
+    font-size: 0.85rem;
+    font-weight: 400;
+    padding: 14px 16px;
+    cursor: pointer;
+    text-align: left;
+    line-height: 1.35;
+    transition: all 0.12s;
+  }
+
+  .opt-btn:hover:not(:disabled) {
+    background: var(--bg4);
+    border-color: var(--green-dim);
+    color: var(--text);
+  }
+
+  .opt-btn:disabled { cursor: default; }
+
+  .opt-btn.correct {
+    background: rgba(74,122,54,0.25);
+    border-color: var(--green);
+    color: var(--green-bright);
+  }
+
+  .opt-btn.wrong {
+    background: rgba(201,96,96,0.15);
+    border-color: var(--red);
+    color: var(--red);
+  }
+
+  .opt-btn.reveal {
+    background: rgba(74,122,54,0.15);
+    border-color: var(--green-dim);
+    color: var(--green);
+  }
+
+  .result-reveal {
+    margin-top: 1rem;
+    padding: 1rem 1.25rem;
+    background: var(--bg3);
+    border-radius: 10px;
+    border-left: 3px solid var(--green);
+  }
+
+  .result-reveal.bad { border-left-color: var(--red); }
+
+  .result-name {
+    font-family: var(--serif);
+    font-size: 1.2rem;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .result-sci {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--text3);
+    font-style: italic;
+    margin-bottom: 6px;
+  }
+
+  .result-note {
+    font-size: 0.8rem;
+    color: var(--text2);
+    line-height: 1.6;
+  }
+
+  .card-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .hint-btn {
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--text3);
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    padding: 7px 14px;
+    cursor: pointer;
+    transition: all 0.12s;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .hint-btn:hover:not(:disabled) { border-color: var(--amber); color: var(--amber); }
+  .hint-btn:disabled { opacity: 0.4; cursor: default; }
+
+  .next-btn {
+    background: transparent;
+    border: 1px solid var(--green-dim);
+    border-radius: 8px;
+    color: var(--green);
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    padding: 7px 18px;
+    cursor: pointer;
+    transition: all 0.12s;
+    letter-spacing: 0.04em;
+    display: none;
+  }
+
+  .next-btn:hover { background: var(--bg4); border-color: var(--green); }
+
+  .hint-txt {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--amber);
+  }
+
+  .xcredit {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--text3);
+    margin-top: 0.5rem;
+  }
+
+  .xcredit a { color: var(--text3); text-decoration: underline; text-underline-offset: 3px; }
+  .xcredit a:hover { color: var(--green); }
+
+  .history-section {
+    margin-top: 2rem;
+    display: none;
+  }
+
+  .section-head {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .hist-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(120,180,100,0.06);
+    font-size: 0.82rem;
+  }
+
+  .hist-item:last-child { border-bottom: none; }
+
+  .hist-name { color: var(--text2); }
+
+  .hist-result {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+  }
+
+  .hist-result.ok { color: var(--green); }
+  .hist-result.bad { color: var(--red); }
+
+  footer {
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--line);
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--text3);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  footer a { color: var(--text3); text-decoration: none; }
+  footer a:hover { color: var(--green); }
+
+  .loading-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 2rem 1.5rem;
+    color: var(--text3);
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    background: var(--bg2);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+  }
+
+  .spinner {
+    width: 16px; height: 16px;
+    border: 1.5px solid var(--bg4);
+    border-top-color: var(--green);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 480px) {
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .options { grid-template-columns: 1fr; }
+    .controls { gap: 8px; }
+    .new-btn { margin-left: 0; width: 100%; text-align: center; }
+    .wordmark { font-size: 1.9rem; }
+  }
+</style>
+</head>
+<body>
+<div class="noise"></div>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="wordmark">Avionics <em>for birds</em></div>
+    </div>
+    <div class="tagline">xeno-canto · ebird · cornell lab</div>
+  </header>
+
+  <div class="stats-row">
+    <div class="stat"><div class="stat-val" id="sc">0</div><div class="stat-lbl">Score</div></div>
+    <div class="stat"><div class="stat-val" id="st">0</div><div class="stat-lbl">Streak</div></div>
+    <div class="stat"><div class="stat-val" id="sa">—</div><div class="stat-lbl">Accuracy</div></div>
+    <div class="stat"><div class="stat-val" id="sq">0</div><div class="stat-lbl">Played</div></div>
+  </div>
+
+  <div class="key-bar">
+    <label>eBird key</label>
+    <input type="text" id="ebird-key" placeholder="Paste your key from ebird.org/api/keygen (optional)" autocomplete="off" spellcheck="false">
+    <button class="btn-sm" onclick="testKey()">Test</button>
+    <span id="key-status">no key</span>
+  </div>
+
+  <div class="controls">
+    <div class="ctrl-group">
+      <span class="ctrl-lbl">Region</span>
+      <select id="reg" onchange="clearPool()">
+        <option value="US">North America</option>
+        <option value="GB">UK & Ireland</option>
+        <option value="DE">Europe</option>
+        <option value="AU">Australia</option>
+        <option value="IN">India</option>
+        <option value="ZA">South Africa</option>
+        <option value="BR">Brazil</option>
+        <option value="MX">Mexico</option>
+      </select>
+    </div>
+    <div class="ctrl-group">
+      <span class="ctrl-lbl">Difficulty</span>
+      <div class="diff-tabs">
+        <button class="dtab active" data-d="easy" onclick="setDiff(this)">Easy</button>
+        <button class="dtab" data-d="medium" onclick="setDiff(this)">Medium</button>
+        <button class="dtab" data-d="hard" onclick="setDiff(this)">Hard</button>
+      </div>
+    </div>
+    <button class="new-btn" onclick="startRound()">New bird →</button>
+  </div>
+
+  <div id="quiz-area">
+    <div class="empty-state">
+      <div class="empty-icon">♪</div>
+      <p>Press <strong>New bird</strong> to begin.<br>Real recordings. Real species. Train your ear.</p>
+    </div>
+  </div>
+
+  <div class="history-section" id="hist-section">
+    <div class="section-head">Recent</div>
+    <div id="hist-list"></div>
+  </div>
+
+  <footer>
+    <span>Avionics — bird vocalization quiz</span>
+    <span>
+      <a href="https://xeno-canto.org" target="_blank">xeno-canto.org</a> ·
+      <a href="https://ebird.org" target="_blank">eBird</a> ·
+      <a href="https://github.com/falsemisfortune/Avionics" target="_blank">github</a>
+    </span>
+  </footer>
+</div>
+
+<script>
+const FALLBACK = {
+  US:["Turdus migratorius","Cardinalis cardinalis","Cyanocitta cristata","Zenaida macroura","Melospiza melodia","Poecile atricapillus","Spinus tristis","Setophaga petechia","Sialia sialis","Ardea herodias","Corvus brachyrhynchos","Bubo virginianus","Picoides pubescens","Bombycilla cedrorum","Falco sparverius","Cathartes aura","Columba livia","Sturnus vulgaris","Passerina cyanea","Anas platyrhynchos"],
+  GB:["Erithacus rubecula","Turdus merula","Parus major","Cyanistes caeruleus","Fringilla coelebs","Carduelis carduelis","Sturnus vulgaris","Columba palumbus","Pica pica","Cuculus canorus","Luscinia megarhynchos","Phylloscopus collybita","Sylvia atricapilla","Troglodytes troglodytes","Passer domesticus"],
+  DE:["Erithacus rubecula","Turdus merula","Parus major","Fringilla coelebs","Cuculus canorus","Alcedo atthis","Oriolus oriolus","Upupa epops","Hirundo rustica","Ciconia ciconia","Passer domesticus","Phoenicurus phoenicurus","Sylvia atricapilla","Luscinia luscinia"],
+  AU:["Dacelo novaeguineae","Gymnorhina tibicen","Menura novaehollandiae","Cacatua galerita","Trichoglossus moluccanus","Platycercus elegans","Corvus coronoides","Malurus cyaneus","Petroica goodenovii","Cracticus torquatus"],
+  IN:["Pycnonotus cafer","Acridotheres tristis","Dicrurus macrocercus","Corvus splendens","Lonchura punctulata","Psittacula krameri","Halcyon smyrnensis","Centropus sinensis","Passer domesticus","Columba livia"],
+  ZA:["Pycnonotus barbatus","Corvus albus","Streptopelia capicola","Merops apiaster","Bubo africanus","Lybius torquatus","Lamprotornis nitens","Cisticola juncidis","Alopochen aegyptiaca","Batis capensis"],
+  BR:["Pitangus sulphuratus","Furnarius rufus","Mimus saturninus","Tyrannus melancholicus","Crotophaga ani","Zonotrichia capensis","Volatinia jacarina","Columbina talpacoti","Patagioenas picazuro","Amazona amazonica"],
+  MX:["Mimus polyglottos","Cardinalis cardinalis","Zenaida asiatica","Melanerpes aurifrons","Passerina ciris","Icterus pustulatus","Arremonops rufivirgatus","Columbina inca","Pyrocephalus rubinus","Corvus corax"]
+};
+
+let score=0,streak=0,total=0;
+let answered=false,diff="easy";
+let ebirdPool=null,timer=null;
+let history=[];
+
+function setDiff(el){
+  document.querySelectorAll('.dtab').forEach(d=>d.classList.remove('active'));
+  el.classList.add('active');
+  diff=el.dataset.d;
+}
+
+function clearPool(){ ebirdPool=null; }
+
+function key(){ return document.getElementById('ebird-key').value.trim(); }
+
+async function testKey(){
+  const k=key(), s=document.getElementById('key-status');
+  if(!k){ s.textContent='no key'; s.className=''; return; }
+  s.textContent='testing…'; s.className='';
+  try{
+    const r=await fetch(`https://api.ebird.org/v2/ref/region/list/country/world`,{headers:{'X-eBirdApiToken':k}});
+    if(r.ok){ s.textContent='valid ✓'; s.className='ok'; }
+    else{ s.textContent='invalid ✗'; s.className='err'; }
+  }catch{ s.textContent='error'; s.className='err'; }
+}
+
+async function loadEbird(region,k){
+  try{
+    const [codeRes,taxRes]=await Promise.all([
+      fetch(`https://api.ebird.org/v2/product/spplist/${region}`,{headers:{'X-eBirdApiToken':k}}),
+      fetch(`https://api.ebird.org/v2/ref/taxonomy/ebird?fmt=json&locale=en`,{headers:{'X-eBirdApiToken':k}})
+    ]);
+    if(!codeRes.ok||!taxRes.ok) return null;
+    const [codes,tax]=await Promise.all([codeRes.json(),taxRes.json()]);
+    const cset=new Set(codes);
+    return tax.filter(t=>t.category==='species'&&cset.has(t.speciesCode))
+              .map(t=>({sci:t.sciName,common:t.comName,family:t.familyComName,order:t.order||''}));
+  }catch{ return null; }
+}
+
+async function fetchXC(sci){
+  try{
+    const q=sci.replace(' ','+');
+    const r=await fetch(`https://xeno-canto.org/api/2/recordings?query=sp:${q}+q:A`);
+    const d=await r.json();
+    if(!d.recordings?.length) return null;
+    const pool=d.recordings.slice(0,20);
+    return pool[Math.floor(Math.random()*pool.length)];
+  }catch{ return null; }
+}
+
+function shuffle(a){ return [...a].sort(()=>Math.random()-.5); }
+
+function buildOptions(correct,pool){
+  const others=pool.filter(s=>s.sci!==correct.sci);
+  let cands=[];
+  if(diff==='easy'){
+    const fams=[...new Set(others.map(s=>s.family))].filter(f=>f&&f!==correct.family);
+    shuffle(fams).slice(0,3).forEach(f=>{
+      const m=others.filter(s=>s.family===f);
+      if(m.length) cands.push(m[Math.floor(Math.random()*m.length)]);
+    });
+  } else if(diff==='medium'){
+    cands=shuffle(others.filter(s=>s.family===correct.family)).slice(0,3);
+  } else {
+    cands=shuffle(others.filter(s=>s.order===correct.order)).slice(0,3);
+  }
+  while(cands.length<3){
+    const p=shuffle(others).find(s=>!cands.find(c=>c.sci===s.sci));
+    if(p) cands.push(p); else break;
+  }
+  return shuffle([correct,...cands.slice(0,3)]);
+}
+
+function setLoading(msg){
+  document.getElementById('quiz-area').innerHTML=`<div class="loading-card"><div class="spinner"></div>${msg}</div>`;
+}
+
+async function startRound(){
+  if(timer){ clearInterval(timer); timer=null; }
+  answered=false;
+  const reg=document.getElementById('reg').value;
+  const k=key();
+
+  if(k&&!ebirdPool){
+    setLoading('Loading eBird species list…');
+    ebirdPool=await loadEbird(reg,k);
+    const s=document.getElementById('key-status');
+    if(ebirdPool){ s.textContent=`${ebirdPool.length} spp`; s.className='ok'; }
+    else{ s.textContent='load failed'; s.className='err'; }
+  }
+
+  const pool = (ebirdPool?.length>10) ? ebirdPool :
+    (FALLBACK[reg]||FALLBACK.US).map(sci=>({sci,common:formatSci(sci),family:'Unknown',order:'Unknown'}));
+
+  setLoading('Fetching recording from xeno-canto…');
+  const pick=pool[Math.floor(Math.random()*pool.length)];
+  const rec=await fetchXC(pick.sci);
+
+  if(!rec){
+    document.getElementById('quiz-area').innerHTML=`<div class="loading-card" style="color:#c96060">No recording found. Try again.</div>`;
+    return;
+  }
+
+  const correctCommon=rec['en']||pick.common;
+  const opts=ebirdPool ? buildOptions(pick,pool) : shuffle([pick,...shuffle(pool.filter(s=>s.sci!==pick.sci)).slice(0,3)]);
+  const audio=`https:${rec.file}`;
+
+  document.getElementById('quiz-area').innerHTML=`
+    <div class="quiz-card">
+      <div class="meta-chips">
+        <span class="chip green">${rec.cnt||'Unknown'}</span>
+        <span class="chip">${rec.type||'call / song'}</span>
+        ${pick.family&&pick.family!=='Unknown'&&diff!=='easy'?`<span class="chip">${pick.family}</span>`:''}
+        ${rec.date?`<span class="chip">${rec.date.slice(0,7)}</span>`:''}
+      </div>
+      <audio controls id="bird-audio" ${diff==='hard'?'autoplay':''}><source src="${audio}" type="audio/mpeg"></audio>
+      ${diff==='hard'?`<div class="timer-track"><div class="timer-fill" id="tfill"></div></div>`:''}
+      <div class="options" id="opts"></div>
+      <div id="res"></div>
+      <div class="card-actions">
+        <button class="hint-btn" id="hint-btn" onclick="showHint('${(rec.cnt||'').replace(/'/g,'')}','${(rec.type||'').replace(/'/g,'')}')">Hint</button>
+        <button class="next-btn" id="next-btn" onclick="startRound()">Next bird →</button>
+        <span class="hint-txt" id="hint-txt"></span>
+      </div>
+    </div>
+    <div class="xcredit">
+      Recorded by ${rec.rec||'unknown'} ·
+      <a href="https://xeno-canto.org/${rec.id}" target="_blank">XC${rec.id}</a>
+      ${rec.lic?` · <a href="${rec.lic}" target="_blank">license</a>`:''}
+    </div>
+  `;
+
+  const og=document.getElementById('opts');
+  opts.forEach(opt=>{
+    const b=document.createElement('button');
+    b.className='opt-btn';
+    b.textContent=opt.sci===pick.sci ? correctCommon : (opt.common||formatSci(opt.sci));
+    b.dataset.correct=opt.sci===pick.sci?'1':'0';
+    b.onclick=()=>handleAnswer(b,pick,correctCommon,rec,opts);
+    og.appendChild(b);
+  });
+
+  if(diff==='hard'){
+    let pct=100;
+    timer=setInterval(()=>{
+      if(answered){ clearInterval(timer); return; }
+      pct-=100/150;
+      const f=document.getElementById('tfill');
+      if(f) f.style.width=Math.max(0,pct)+'%';
+      if(pct<=0){ clearInterval(timer); if(!answered) handleAnswer(null,pick,correctCommon,rec,opts); }
+    },100);
+  }
+}
+
+function handleAnswer(btn,pick,correctCommon,rec,opts){
+  if(answered) return;
+  answered=true;
+  if(timer){ clearInterval(timer); timer=null; }
+  total++;
+  const ok=btn&&btn.dataset.correct==='1';
+  document.querySelectorAll('.opt-btn').forEach(b=>{
+    b.disabled=true;
+    if(b.dataset.correct==='1') b.classList.add(ok?'correct':'reveal');
+    else if(b===btn) b.classList.add('wrong');
+  });
+  if(ok){score++;streak++;}else{streak=0;}
+  document.getElementById('sc').textContent=score;
+  document.getElementById('st').textContent=streak;
+  document.getElementById('sq').textContent=total;
+  document.getElementById('sa').textContent=Math.round(score/total*100)+'%';
+
+  const label=ok?'Correct':'Wrong';
+  document.getElementById('res').innerHTML=`
+    <div class="result-reveal ${ok?'':'bad'}">
+      <div class="result-name">${ok?'✓ ':btn?'✗ ':'⏱ '}${correctCommon}</div>
+      <div class="result-sci">${rec.gen} ${rec.sp}</div>
+      ${pick.family&&pick.family!=='Unknown'?`<div class="result-note">Family: ${pick.family}</div>`:''}
+      ${rec.rmk?`<div class="result-note" style="margin-top:4px">${rec.rmk.slice(0,140)}${rec.rmk.length>140?'…':''}</div>`:''}
+    </div>
+  `;
+
+  document.getElementById('next-btn').style.display='inline-block';
+  document.getElementById('hint-btn').style.display='none';
+
+  history.unshift({name:correctCommon,ok});
+  if(history.length>12) history.pop();
+  renderHistory();
+}
+
+function showHint(country,type){
+  document.getElementById('hint-txt').textContent=`Recorded in ${country||'unknown'} · ${type||'call/song'}`;
+  document.getElementById('hint-btn').disabled=true;
+}
+
+function renderHistory(){
+  const sec=document.getElementById('hist-section');
+  const list=document.getElementById('hist-list');
+  if(!history.length){ sec.style.display='none'; return; }
+  sec.style.display='block';
+  list.innerHTML=history.map(h=>`
+    <div class="hist-item">
+      <span class="hist-name">${h.name}</span>
+      <span class="hist-result ${h.ok?'ok':'bad'}">${h.ok?'correct':'wrong'}</span>
+    </div>
+  `).join('');
+}
+
+function formatSci(sci){
+  return sci.split(' ').map((w,i)=>i===0?w[0].toUpperCase()+w.slice(1):w).join(' ');
+}
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+</script>
+</body>
+</html>
