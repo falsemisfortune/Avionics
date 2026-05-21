@@ -656,11 +656,14 @@ async function loadEbird(region,k){
 
 async function fetchXC(sci){
   try{
-    const parts=sci.trim().split(' ');
-    const genus=encodeURIComponent(parts[0]);
-    const species=encodeURIComponent(parts.slice(1).join(' '));
-    // Try quality A first, fall back to any quality
-    for(const q of [`gen:${genus}+sp:${species}+q:A`, `gen:${genus}+sp:${species}`]){
+    const name=sci.trim();
+    // Try multiple query formats in order: quality A, any quality, plain name
+    const queries=[
+      `sp:"${name}"+q:A`,
+      `sp:"${name}"`,
+      encodeURIComponent(name)
+    ];
+    for(const q of queries){
       const r=await fetch(`https://xeno-canto.org/api/2/recordings?query=${q}`);
       if(!r.ok) continue;
       const d=await r.json();
