@@ -657,14 +657,15 @@ async function loadEbird(region,k){
 async function fetchXC(sci){
   try{
     const name=sci.trim();
-    const enc=encodeURIComponent(name);
-    // Use www subdomain; try quality A first, then any quality
+    // xeno-canto non-www, redirect:follow, spaces as %20, quality filter separate term
+    const base='https://xeno-canto.org/api/2/recordings';
+    const nameEnc=encodeURIComponent(name); // e.g. Larus%20glaucescens
     const queries=[
-      `${enc}+q:A`,
-      `${enc}`
+      `${nameEnc}%20q:A`,
+      `${nameEnc}`
     ];
     for(const q of queries){
-      const r=await fetch(`https://www.xeno-canto.org/api/2/recordings?query=${q}`);
+      const r=await fetch(`${base}?query=${q}`,{redirect:'follow'});
       if(!r.ok) continue;
       const d=await r.json();
       if(d.recordings?.length){
