@@ -1,4 +1,4 @@
-const CACHE = 'avionics-v1';
+const CACHE = 'avionics-v2';
 const STATIC = [
   '/Avionics/',
   '/Avionics/index.html',

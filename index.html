@@ -660,7 +660,7 @@ async function fetchXC(sci){
     const enc=encodeURIComponent(name);
     const key='ba0aec1677fc4d364ec7497fe3a2262711187a3a';
     // v3 API with key, try quality A first then any
-    for(const extra of ['+q:A',''‌]){
+    for(const extra of ['+q:A','']){
       const url=`https://xeno-canto.org/api/3/recordings?query=sp:%22${enc}%22${extra}&key=${key}`;
       const r=await fetch(url,{redirect:'follow'});
       if(!r.ok) continue;
