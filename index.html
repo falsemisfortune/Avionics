@@ -657,15 +657,12 @@ async function loadEbird(region,k){
 async function fetchXC(sci){
   try{
     const name=sci.trim();
-    // xeno-canto non-www, redirect:follow, spaces as %20, quality filter separate term
-    const base='https://xeno-canto.org/api/2/recordings';
-    const nameEnc=encodeURIComponent(name); // e.g. Larus%20glaucescens
-    const queries=[
-      `${nameEnc}%20q:A`,
-      `${nameEnc}`
-    ];
-    for(const q of queries){
-      const r=await fetch(`${base}?query=${q}`,{redirect:'follow'});
+    const enc=encodeURIComponent(name);
+    const key='ba0aec1677fc4d364ec7497fe3a2262711187a3a';
+    // v3 API with key, try quality A first then any
+    for(const extra of ['+q:A',''‌]){
+      const url=`https://xeno-canto.org/api/3/recordings?query=sp:%22${enc}%22${extra}&key=${key}`;
+      const r=await fetch(url,{redirect:'follow'});
       if(!r.ok) continue;
       const d=await r.json();
       if(d.recordings?.length){
