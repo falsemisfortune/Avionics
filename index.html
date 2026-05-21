@@ -491,7 +491,7 @@ const STUDY_PACKS = [
 // ═══════════════════════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════════════════════
-let score=0,streak=0,total=0,sessionMisses=[];
+let score=0,streak=0,total=0,sessionMisses=[],lastShareText='';
 let answered=false,diff='easy',sessionMode='free';
 let ebirdPool=null,roundTimer=null,sessionTimer=null;
 let sessionCount=0,sessionLimit=0,sessionTimeLeft=0;
@@ -821,7 +821,7 @@ function renderQuizCard(pick,rec,opts,areaId,onAnswer){
       <div id="res-${areaId}"></div>
       <div class="card-actions">
         <button class="hint-btn" id="hint-btn-${areaId}" onclick="showHint('${(rec.cnt||'').replace(/'/g,'')}','${(rec.type||'').replace(/'/g,'')}','${areaId}')">Hint</button>
-        <button class="skip-btn" id="skip-btn-${areaId}" onclick="skipBird('${pick.sci}','${correctCommon.replace(/'/g,'')}','${areaId}')">Skip</button>
+        <button class="skip-btn" id="skip-btn-${areaId}" data-area="${areaId}" onclick="skipBird(this)">Skip</button>
         <button class="next-btn" id="next-btn-${areaId}" onclick="${areaId==='quiz-area'?'startRound()':'startStudyRound()'}">Next →</button>
         <span class="hint-txt" id="hint-txt-${areaId}"></span>
       </div>
@@ -953,7 +953,8 @@ function showHint(country,type,areaId){
   document.getElementById(`hint-btn-${areaId}`).disabled=true;
 }
 
-function skipBird(sci,name,areaId){
+function skipBird(btn){
+  const areaId=btn?btn.dataset.area:'quiz-area';
   if(areaId==='quiz-area') startRound(); else startStudyRound();
 }
 
@@ -993,7 +994,7 @@ function showSummary(){
        const c=sessionMisses.filter(m=>m.name===n).length;
        return `<div class="miss-item"><span>${n}</span><span class="miss-count">missed ${c}×</span></div>`;
      }).join('')}</div>`:'';
-  const shareText=`🎧 Avionics Bird Quiz\nScore: ${score} | Accuracy: ${acc}% | Streak: ${streak}\nhttps://falsemisfortune.github.io/Avionics`;
+  lastShareText=`🎧 Avionics Bird Quiz\nScore: ${score} | Accuracy: ${acc}% | Streak: ${streak}\nhttps://falsemisfortune.github.io/Avionics`;
   showModal(`
     <h2>Session complete</h2>
     <div class="summary-stats">
@@ -1006,7 +1007,7 @@ function showSummary(){
     ${missHTML}
     <div class="modal-actions">
       <button class="modal-btn primary" onclick="closeModal();resetSession();startRound()">Play again</button>
-      <button class="modal-btn" onclick="shareResult('${shareText.replace(/'/g,'\\'')}')">Share <span class="share-copied" id="share-copied">Copied!</span></button>
+      <button class="modal-btn" onclick="shareResult()">Share <span class="share-copied" id="share-copied">Copied!</span></button>
       <button class="modal-btn" onclick="closeModal()">Close</button>
     </div>
   `);
@@ -1018,7 +1019,8 @@ function resetSession(){score=0;streak=0;total=0;sessionCount=0;sessionMisses=[]
 }
 
 function shareResult(text){
-  navigator.clipboard.writeText(text).then(()=>{
+  const t=text||lastShareText;
+  navigator.clipboard.writeText(t).then(()=>{
     const el=document.getElementById('share-copied');
     if(el){el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2000);}
   }).catch(()=>{});
@@ -1137,7 +1139,7 @@ function renderWeakSpots(){
   sec.style.display='block';
   document.getElementById('weak-grid').innerHTML=weak.map(sp=>{
     const m=mastery[sp.sci];const acc=Math.round(m.correct/m.seen*100);
-    return `<div class="weak-card" onclick="drillSpecies('${sp.sci}','${sp.common.replace(/'/g,'')}')">
+    return `<div class="weak-card" onclick="drillSpecies('${sp.sci}','${sp.common.replace(/'/g,"&#39;")}')">
       <div class="weak-name">${sp.common}</div>
       <div class="weak-stat">${acc}% accuracy · ${m.seen} attempts</div>
     </div>`;
