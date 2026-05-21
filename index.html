@@ -809,7 +809,13 @@ function renderQuizCard(pick,rec,opts,areaId,onAnswer){
   const area=document.getElementById(areaId);
   const isHard=diff==='hard'&&areaId==='quiz-area';
   const correctCommon=rec['en']||pick.common;
-  const audio=`https:${rec.file}`;
+  const audio=(()=>{
+        const f=rec.file||'';
+        if(f.startsWith('http')) return f;
+        if(f.startsWith('//')) return 'https:'+f;
+        // v3 returns path like /938581/download
+        return 'https://xeno-canto.org'+f;
+      })();
   playCount=0;
   const notes=loadNotes();
   const savedNote=notes[pick.sci]||'';
