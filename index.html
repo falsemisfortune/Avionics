@@ -659,12 +659,16 @@ async function fetchXC(sci){
     const parts=sci.trim().split(' ');
     const genus=encodeURIComponent(parts[0]);
     const species=encodeURIComponent(parts.slice(1).join(' '));
-    const q=`gen:${genus}+sp:${species}+q:A`;
-    const r=await fetch(`https://xeno-canto.org/api/2/recordings?query=${q}`);
-    if(!r.ok) return null;
-    const d=await r.json();
-    if(!d.recordings?.length) return null;
-    return d.recordings.slice(0,20)[Math.floor(Math.random()*Math.min(d.recordings.length,20))];
+    // Try quality A first, fall back to any quality
+    for(const q of [`gen:${genus}+sp:${species}+q:A`, `gen:${genus}+sp:${species}`]){
+      const r=await fetch(`https://xeno-canto.org/api/2/recordings?query=${q}`);
+      if(!r.ok) continue;
+      const d=await r.json();
+      if(d.recordings?.length){
+        return d.recordings.slice(0,20)[Math.floor(Math.random()*Math.min(d.recordings.length,20))];
+      }
+    }
+    return null;
   }catch{return null;}
 }
 
