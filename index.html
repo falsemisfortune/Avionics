@@ -820,9 +820,9 @@ function renderQuizCard(pick,rec,opts,areaId,onAnswer){
       <div class="options" id="opts-${areaId}"></div>
       <div id="res-${areaId}"></div>
       <div class="card-actions">
-        <button class="hint-btn" id="hint-btn-${areaId}" onclick="showHint('${(rec.cnt||'').replace(/'/g,'')}','${(rec.type||'').replace(/'/g,'')}','${areaId}')">Hint</button>
+        <button class="hint-btn" id="hint-btn-${areaId}" data-country="${rec.cnt||''}" data-type="${rec.type||''}" data-area="${areaId}" onclick="showHint(this)">Hint</button>
         <button class="skip-btn" id="skip-btn-${areaId}" data-area="${areaId}" onclick="skipBird(this)">Skip</button>
-        <button class="next-btn" id="next-btn-${areaId}" onclick="${areaId==='quiz-area'?'startRound()':'startStudyRound()'}">Next →</button>
+        <button class="next-btn" id="next-btn-${areaId}" data-area="${areaId}" onclick="nextBird(this)">Next →</button>
         <span class="hint-txt" id="hint-txt-${areaId}"></span>
       </div>
     </div>
@@ -948,12 +948,17 @@ function handleAnswer(btn,pick,correctCommon,rec,opts,areaId,onAnswer){
   if(onAnswer) onAnswer(ok);
 }
 
-function showHint(country,type,areaId){
+function showHint(btn){
+  const country=btn.dataset.country,type=btn.dataset.type,areaId=btn.dataset.area;
   document.getElementById(`hint-txt-${areaId}`).textContent=`Recorded in ${country||'unknown'} · ${type||'call/song'}`;
-  document.getElementById(`hint-btn-${areaId}`).disabled=true;
+  btn.disabled=true;
 }
 
 function skipBird(btn){
+  const areaId=btn?btn.dataset.area:'quiz-area';
+  if(areaId==='quiz-area') startRound(); else startStudyRound();
+}
+function nextBird(btn){
   const areaId=btn?btn.dataset.area:'quiz-area';
   if(areaId==='quiz-area') startRound(); else startStudyRound();
 }
@@ -1076,7 +1081,7 @@ function renderPackGrid(){
     const seen=pack.species.filter(sp=>getMasteryLevel(mastery[sp.sci])>0).length;
     const pct=Math.round(mastered/tot*100);
     const isActive=activePack&&activePack.id===pack.id;
-    return `<div class="pack-card ${isActive?'active-pack':''}" onclick="selectPack('${pack.id}')">
+    return `<div class="pack-card ${isActive?'active-pack':''}" data-packid="${pack.id}" onclick="selectPack(this.dataset.packid)">
       <span class="pack-icon">${pack.icon}</span>
       <div class="pack-name">${pack.name}</div>
       <div class="pack-count">${tot} species · ${seen} seen</div>
@@ -1139,7 +1144,7 @@ function renderWeakSpots(){
   sec.style.display='block';
   document.getElementById('weak-grid').innerHTML=weak.map(sp=>{
     const m=mastery[sp.sci];const acc=Math.round(m.correct/m.seen*100);
-    return `<div class="weak-card" onclick="drillSpecies('${sp.sci}','${sp.common.replace(/'/g,"&#39;")}')">
+    return `<div class="weak-card" data-sci="${sp.sci}" data-common="${sp.common}" onclick="drillSpecies(this.dataset.sci,this.dataset.common)">
       <div class="weak-name">${sp.common}</div>
       <div class="weak-stat">${acc}% accuracy · ${m.seen} attempts</div>
     </div>`;
