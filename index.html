@@ -657,14 +657,14 @@ async function loadEbird(region,k){
 async function fetchXC(sci){
   try{
     const name=sci.trim();
-    // Try multiple query formats in order: quality A, any quality, plain name
+    const enc=encodeURIComponent(name);
+    // Use www subdomain; try quality A first, then any quality
     const queries=[
-      `sp:"${name}"+q:A`,
-      `sp:"${name}"`,
-      encodeURIComponent(name)
+      `${enc}+q:A`,
+      `${enc}`
     ];
     for(const q of queries){
-      const r=await fetch(`https://xeno-canto.org/api/2/recordings?query=${q}`);
+      const r=await fetch(`https://www.xeno-canto.org/api/2/recordings?query=${q}`);
       if(!r.ok) continue;
       const d=await r.json();
       if(d.recordings?.length){
