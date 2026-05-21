@@ -7,6 +7,7 @@
 <meta name="theme-color" content="#0e1a0f">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.svg">
+<link rel="icon" href="icon-192.svg" type="image/svg+xml">
 <title>Avionics — Bird Vocalization Quiz</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -655,8 +656,12 @@ async function loadEbird(region,k){
 
 async function fetchXC(sci){
   try{
-    const q=encodeURIComponent(sci).replace('%20','+');
-    const r=await fetch(`https://xeno-canto.org/api/2/recordings?query=sp:${q}+q:A`);
+    const parts=sci.trim().split(' ');
+    const genus=encodeURIComponent(parts[0]);
+    const species=encodeURIComponent(parts.slice(1).join(' '));
+    const q=`gen:${genus}+sp:${species}+q:A`;
+    const r=await fetch(`https://xeno-canto.org/api/2/recordings?query=${q}`);
+    if(!r.ok) return null;
     const d=await r.json();
     if(!d.recordings?.length) return null;
     return d.recordings.slice(0,20)[Math.floor(Math.random()*Math.min(d.recordings.length,20))];
